@@ -14,7 +14,7 @@ import net
 from function import adaptive_instance_normalization, coral
 
 
-def test_transform(size, crop):
+def verify_transform(size, crop):
     transform_list = []
     if size != 0:
         transform_list.append(transforms.Resize(size))
@@ -118,8 +118,8 @@ vgg = nn.Sequential(*list(vgg.children())[:31])
 vgg.to(device)
 decoder.to(device)
 
-content_tf = test_transform(args.content_size, args.crop)
-style_tf = test_transform(args.style_size, args.crop)
+content_tf = verify_transform(args.content_size, args.crop)
+style_tf = verify_transform(args.style_size, args.crop)
 
 # Storing the styles
 styles = []
@@ -137,12 +137,21 @@ for img_path in txt_files:
     print(img_path)
     cls_id = str(img_path.split('_')[0])
     content_path = (args.content_dir / img_path).with_suffix(".jpg")
-    img_name = str(content_path).split('/')[-1][-15:]
-    path = str(content_path).split('JPEGImages/')[0] + 'JPEGImages/' + img_name
+    img_name = content_path.name[-15:]
+    path = content_path.parent  / img_name
 
     content = content_tf(Image.open(str(path))).squeeze()
     content = content.to(device).unsqueeze(0)
-    for i, style in enumerate(styles):
+
+    plt.imsave(str(output_dir / (str(0) + "_" + str(content_path.name))),
+               (255 * content.squeeze().permute(1, 2, 0).cpu().numpy()).astype(np.uint8))
+
+    for i, style in enumerate(styles, start=1):
+
+        out_path = output_dir / (str(i) + "_" + str(content_path.name))
+        if out_path.exists():
+            continue
+
         with torch.no_grad():
             output = style_transfer(vgg, decoder, content, style,
                                     args.alpha)
@@ -150,5 +159,5 @@ for img_path in txt_files:
 
         output = (output * 255).astype(np.uint8)
 
-        out_path = output_dir / (str(i) + "_" + str(content_path.name))
         plt.imsave(str(out_path), output)
+

@@ -4,6 +4,7 @@ from utils import *
 import csv
 from argparse import ArgumentParser
 import json
+from tqdm import tqdm
 
 
 def main():
@@ -41,7 +42,9 @@ def main():
 
     print(' > Processing starting...')
     # for-loop inference and store values as numpy array
-    for i, (factor, example1, example2, _, _) in enumerate(dataloader):
+    for i, (factor, example1, example2, _, _) in tqdm(enumerate(dataloader),
+                                                      total=len(dataloader),
+                                                      ncols=150):
 
         # move data to GPU
         example1, example2 = example1.cuda(device), example2.cuda(device)

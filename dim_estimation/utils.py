@@ -69,7 +69,12 @@ def get_dataloader(args):
     else:
         print('dataset not available!')
         sys.exit()
-    dataloader = DataLoader(dataset, args.batch_size, shuffle=False, num_workers=args.num_workers, pin_memory=True)
+    dataloader = DataLoader(dataset, args.batch_size,
+                            shuffle=False,
+                            num_workers=args.num_workers,
+                            # pin_memory=True
+                            )
+    # pin_memory=True causes out-of-memory error on my machine
     return dataloader
 
 

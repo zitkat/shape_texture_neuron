@@ -5,19 +5,22 @@ import numpy as np
 import torch.utils.data as data
 import torch
 
+from pathlib import Path
+
 # Stylized VOC
 def get_svoc_data(config):
-    data_path = config.data_path + '*'
-    files = glob.glob(data_path)
+    data_path = Path(config.data_path)
+    files = data_path.glob("*")
     data = []
     data_id_list = {}
-    for i in range(1,21):
-        data_id_list[i] = {'1': [],'2': [],'3': [],'4': [], '5': []}
+    for i in range(1, 21):
+        data_id_list[i] = {'0': [], '1': [],'2': [],'3': [],'4': [],'5': []}
+        # data_id_list[i] = {'1': [],'2': [],'3': [],'4': [], '5': []}
     for i, file in enumerate(files):
-        img_file_name = file.split('/')[-1]
+        img_file_name = file.name
         cls_label = img_file_name.split('_')[1]
         tex_id = img_file_name[0]
-        img_id = img_file_name.split('/')[-1].split('_')[2] + '_' + img_file_name.split('/')[-1].split('_')[3]
+        img_id = img_file_name.split('_')[2] + '_' + img_file_name.split('_')[3]
         data_id_list[int(cls_label)][tex_id].append(file)
         sample = {
             'cls': int(cls_label),
@@ -25,17 +28,21 @@ def get_svoc_data(config):
             'img_id': img_id,
             'file_path': file,
         }
+        if not tex_id == '0':
+            data.append(sample)
 
 
     return data, data_id_list
 
 class StylizedVoc(data.Dataset):
     def __init__(self, config):
+        # need to replace this with datalist of all images, with corresponding styles and class labels
+        # self.data = get_coco_data()
         self.data, self.data_ids = get_svoc_data(config)
         self.num_textures = 5
         self.n_factors = config.n_factors
         self.num_classes = 20
-        self.image_size = config.image_size
+        self.image_size = config.image_size  # int(config.model.split('_')[-1])
         self.list_possible_shapes = []
         for key in self.data_ids:
             if len(self.data_ids[key]['0']):
@@ -48,7 +55,8 @@ class StylizedVoc(data.Dataset):
 
     def get_image(self, path):
         # open image
-        image = cv2.imread(path, cv2.IMREAD_COLOR).astype(np.float32)
+        image = cv2.imread(str(path), cv2.IMREAD_COLOR)
+        image = image.astype(np.float32)
         # resize
         image = cv2.resize(image, (self.image_size, self.image_size), interpolation=cv2.INTER_LINEAR)
         # normalize (imagenet norm used)
@@ -83,10 +91,8 @@ class StylizedVoc(data.Dataset):
             # select same image with different texture
             list_possible_textures.remove(texture1)
             new_texture = random.choice(list_possible_textures)
-            id2 = str(new_texture) + path1.split('/')[-1][1:]
-            path2 = path1.split('/')[:-1]
-            path2.append(id2)
-            path2 = '/'.join(path2)
+            id2 = str(new_texture) + path1.name[1:]
+            path2 = path1.parent / id2
             cls2 = cls1
         else:
             # different shape (class), same texture
