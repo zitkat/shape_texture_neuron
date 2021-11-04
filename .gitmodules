@@ -1,0 +1,4 @@
+[submodule "bag-of-local-features-models"]
+	path = bag_of_local_features_models
+    branch = shape_texture_out
+	url = https://github.com/zitkat/bag-of-local-features-models.git
