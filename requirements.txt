@@ -1,0 +1,8 @@
+pillow~=8.0.1
+timm~=0.3.4
+numpy~=1.19.4
+torchvision~=0.8.1
+matplotlib~=3.3.3
+opencv-python~=4.5.3.56
+tqdm~=4.60.0
+setuptools~=49.6.0
