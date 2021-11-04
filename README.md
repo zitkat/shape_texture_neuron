@@ -1,5 +1,8 @@
 #  Shape or Texture: Understanding Discriminative Features in CNNs, ICLR 2021
 
+
+This code has been used in  [Machine Learning Reproducibility Challenge 2021](https://paperswithcode.com/rc2021).
+
 **[Shape or Texture: Understanding Discriminative Features in CNNs](https://openreview.net/forum?id=NcFEZOi-rLa)**
 <br>
 **[Md Amirul Islam](https://www.cs.ryerson.ca/~amirul/)**, **[Matthew Kowal](https://mkowal2.github.io/)**, **[Patrick Esser](https://github.com/pesser/)**, **[Sen Jia](https://scholar.google.com/citations?user=WOsy1foAAAAJ&hl=en)**, **[Björn Ommer](https://hci.iwr.uni-heidelberg.de/people/bommer)**, **[Konstantinos G. Derpanis](https://www.cs.ryerson.ca/~kosta/)**, **[Neil Bruce](http://socs.uoguelph.ca/~brucen/)** 
@@ -17,7 +20,7 @@
 2. Run the following script to generate the stylized voc 2012 dataset
 
             cd generate_stylized_voc
-            python make_stl_voc.py
+            python make_stl_voc.py --content_dir "/path/to/pascal_voc_2012/JPEGImages"
 
 
 #  Estimating shape and texture neurons
@@ -26,8 +29,8 @@
 
 2. To estimate the shape and texture neurons in a ResNet50 and ViT-16-Base-224 using SVOC (args and results saved to --save_dir), run:
 
-            python main.py --model resnet50 --image_size 513 --save_dir dim_outputs/svoc/resnet50
-            python main.py --model vit_base_patch16_224  --image_size 224 --save_dir dim_outputs/svoc/ViT-16-Base-224
+            python main.py --data_path /path/to/STYLIZED_VOC2012  --model resnet50 --image_size 513 --save_dir dim_outputs/svoc/resnet50
+            python main.py --data_path /path/to/STYLIZED_VOC2012--model vit_base_patch16_224  --image_size 224 --save_dir dim_outputs/svoc/ViT-16-Base-224
 
 Note that the results are in the format \[SHAPE, TEXTURE, RESIDUAL\] and display both the number of neurons and percentages. 
 
