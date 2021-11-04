@@ -1,66 +1,10 @@
-import models.resnet
-import models.densenet
-import models.googlenet
-import models.vgg
-import models.mobilenetv2
-import models.inceptionv3
-import models.inceptionv4
-import models.inception_resnetv2
-from datasets.svoc import *
+import sys
+
+import numpy as np
+import torch
 from torch.utils.data import DataLoader
 
-from timm.models import create_model, apply_test_time_pool, load_checkpoint, is_model, list_models
-from timm.data import create_dataset, create_loader, resolve_data_config, RealLabelsImagenet
-from timm.utils import accuracy, AverageMeter, natural_key, setup_default_logging, set_jit_legacy
-
-
-def get_model(args):
-    if args.model == 'resnet50':
-        model = models.resnet.resnet50(pretrained=args.pretrained)
-    elif args.model == 'resnet18':
-        model = models.resnet.resnet18(pretrained=args.pretrained)
-    elif args.model == 'resnet34':
-        model = models.resnet.resnet34(pretrained=args.pretrained)
-    elif args.model == 'resnet101':
-        model = models.resnet.resnet101(pretrained=args.pretrained)
-    elif args.model == 'resnet152':
-        model = models.resnet.resnet152(pretrained=args.pretrained)
-    elif args.model == 'wide_resnet50_2':
-        model = models.resnet.wide_resnet50_2(pretrained=args.pretrained)
-    elif args.model == 'wide_resnet101_2':
-        model = models.resnet.wide_resnet101_2(pretrained=args.pretrained)
-
-    elif args.model == 'googlenet':
-        model = models.googlenet.googlenet(pretrained=args.pretrained)
-    elif args.model == 'vgg16':
-        model = models.vgg.vgg16(pretrained=args.pretrained)
-    elif args.model == 'mobilenet_v2':
-        model = models.mobilenetv2.mobilenet_v2(pretrained=args.pretrained)
-    elif args.model == 'inceptionv3':
-        model = models.inceptionv3.inception_v3(pretrained=args.pretrained)
-    elif args.model == 'inceptionv4':
-        model = models.inceptionv4.inceptionv4(pretrained="imagenet")
-    elif args.model == 'inceptionresnetv2':
-        model = models.inception_resnetv2.inceptionresnetv2(pretrained="imagenet")
-
-    elif args.model == 'densenet121':
-        model = models.densenet.densenet121(pretrained=args.pretrained)
-    elif args.model == 'densenet161':
-        model = models.densenet.densenet161(pretrained=args.pretrained)
-    elif args.model == 'densenet169':
-        model = models.densenet.densenet169(pretrained=args.pretrained)
-    elif args.model == 'densenet201':
-        model = models.densenet.densenet201(pretrained=args.pretrained)
-
-    elif args.model.split('_') [0] == 'vit':
-        model = create_model(
-            args.model,
-            pretrained=True,
-            num_classes=1000,
-            in_chans=3,
-            global_pool=args.gp,
-            scriptable=args.torchscript)
-    return model
+from dim_estimation.datasets.svoc import StylizedVoc
 
 
 def get_dataloader(args):
@@ -136,7 +80,7 @@ def dim_est(output_dict, factor_list, args):
     score_by_factor = dict()
     individual_scores = dict()
 
-    zall = np.concatenate([za,zb], 0)
+    zall = np.concatenate([za, zb], 0)
     mean = np.mean(zall, 0, keepdims=True)
 
     # za_means = np.mean(za,axis=1)
@@ -144,19 +88,25 @@ def dim_est(output_dict, factor_list, args):
     # za_vars = np.mean((za - za_means[:, None]) * (za - za_means[:, None]), 1)
     # zb_vars = np.mean((za - zb_means[:, None]) * (za - zb_means[:, None]), 1)
 
-    var = np.sum(np.mean((zall-mean)*(zall-mean), 0))
+    var = np.sum(np.mean((zall - mean) * (zall - mean), 0))
     for f in range(args.n_factors):
         if f != args.residual_index:
-            indices = np.where(factors==f)[0]
+            # why is residual factor explicitly in data?
+            # why not just append it and use all the data
+            indices = np.where(factors == f)[0]
             za_by_factor[f] = za[indices]
             zb_by_factor[f] = zb[indices]
-            mean_by_factor[f] = 0.5*(np.mean(za_by_factor[f], 0, keepdims=True)+np.mean(zb_by_factor[f], 0, keepdims=True))
-            # score_by_factor[f] = np.sum(np.mean(np.abs((za_by_factor[f] - mean_by_factor[f]) * (zb_by_factor[f] - mean_by_factor[f])), 0))
+            mean_by_factor[f] = 0.5*(np.mean(za_by_factor[f], 0, keepdims=True) +
+                                     np.mean(zb_by_factor[f], 0, keepdims=True))
+            # score_by_factor[f] = np.sum(np.mean(np.abs((za_by_factor[f] - mean_by_factor[f])* (zb_by_factor[f] - mean_by_factor[f])), 0))
             # score_by_factor[f] = score_by_factor[f] / var
             # OG
-            score_by_factor[f] = np.sum(np.mean((za_by_factor[f]-mean_by_factor[f])*(zb_by_factor[f]-mean_by_factor[f]), 0))
-            score_by_factor[f] = score_by_factor[f]/var
-            idv = np.mean((za_by_factor[f]-mean_by_factor[f])*(zb_by_factor[f]-mean_by_factor[f]), 0)/var
+            score_by_factor[f] = np.sum(np.mean((za_by_factor[f] - mean_by_factor[f]) *
+                                                (zb_by_factor[f] - mean_by_factor[f]), 0))
+            score_by_factor[f] = score_by_factor[f] / var
+
+            idv = np.mean((za_by_factor[f] - mean_by_factor[f]) *
+                          (zb_by_factor[f] - mean_by_factor[f]), 0) / var
             individual_scores[f] = idv
         #   new method
         #     score_by_factor[f] = np.abs(np.mean((za_by_factor[f] - mean_by_factor[f]) * (zb_by_factor[f] - mean_by_factor[f]), 0))
@@ -173,6 +123,8 @@ def dim_est(output_dict, factor_list, args):
         else:
             # individual_scores[f] = np.ones(za_by_factor[0].shape[0])
             score_by_factor[f] = 1.0
+            # why is residual factor explicitly in data?
+            # why not just append it and use all the data
 
     scores = np.array([score_by_factor[f] for f in range(args.n_factors)])
 
@@ -185,5 +137,5 @@ def dim_est(output_dict, factor_list, args):
     dims[-1] = dim - sum(dims[:-1])
     dims_percent = dims.copy()
     for i in range(len(dims)):
-        dims_percent[i] = round(100*(dims[i] / sum(dims)),1)
+        dims_percent[i] = round(100*(dims[i] / sum(dims)), 1)
     return dims, dims_percent

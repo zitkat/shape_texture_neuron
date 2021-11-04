@@ -3,6 +3,8 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
+from dim_estimation.utils import Distribution
+
 try:
     from torch.hub import load_state_dict_from_url
 except ImportError:
@@ -116,48 +118,13 @@ class Bottleneck(nn.Module):
         return out
 
 
-class Distribution(object):
-    def __init__(self, parameters, deterministic=False):
-        self.parameters = parameters
-        self.mean = torch.chunk(parameters, 1, dim=1)
-        self.deterministic = deterministic
-
-    def sample(self):
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        x = self.mean + self.std*torch.randn(self.mean.shape).to(device)
-        return x
-
-    def kl(self, other=None):
-        if self.deterministic:
-            return torch.Tensor([0.])
-        else:
-            if other is None:
-                return 0.5*torch.sum(torch.pow(self.mean, 2)
-                        + self.var - 1.0 - self.logvar,
-                        dim=[1,2,3])
-            else:
-                return 0.5*torch.sum(
-                        torch.pow(self.mean - other.mean, 2) / other.var
-                        + self.var / other.var - 1.0 - self.logvar + other.logvar,
-                        dim=[1,2,3])
-
-    def nll(self, sample):
-        if self.deterministic:
-            return torch.Tensor([0.])
-        logtwopi = np.log(2.0*np.pi)
-        return 0.5*torch.sum(
-                logtwopi+self.logvar+torch.pow(sample-self.mean, 2) / self.var,
-                dim=[1,2,3])
-
-    def mode(self):
-        return self.mean
-
 def upsample_bilinear(x, size):
     if float(torch.__version__[:3]) <= 0.3:
         out = F.upsample(x, size, mode='bilinear')
     else:
         out = F.interpolate(x, size, mode='bilinear', align_corners=True)
     return out
+
 
 class ResNet(nn.Module):
 

@@ -1,6 +1,7 @@
 import os
 import config
-from utils import *
+from utils import get_dataloader
+from model_utils import get_model
 import csv
 from argparse import ArgumentParser
 import json
@@ -62,8 +63,8 @@ def main():
         output_dict['example1'].append(output1.detach().cpu().numpy())
         output_dict['example2'].append(output2.detach().cpu().numpy())
 
-        if i % 10000 == 0:
-            print('Processing example {}/{}'.format(i, len(dataloader)))
+        # if i % 10000 == 0:
+        #     print('Processing example {}/{}'.format(i, len(dataloader)))
 
     print(' > Finished processing examples...')
     print(' > Starting Dimensionality Estimation!')
