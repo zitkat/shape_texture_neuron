@@ -1,9 +1,8 @@
 import os
 import config
-from utils import get_dataloader
+from utils import get_dataloader, dim_est
 from model_utils import get_model
 import csv
-from argparse import ArgumentParser
 import json
 from tqdm import tqdm
 

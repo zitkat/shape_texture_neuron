@@ -1,5 +1,6 @@
 import argparse
 
+
 def load_args():
     parser = argparse.ArgumentParser(description='Dimension estimation')
     parser.add_argument('--save_dir', default='dim_outputs/svoc/', help="dataset to use for dim estimation")

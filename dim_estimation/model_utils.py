@@ -1,5 +1,3 @@
-import sys
-
 import models.resnet
 import models.densenet
 import models.googlenet
@@ -9,12 +7,8 @@ import models.inceptionv3
 import models.inceptionv4
 import models.inception_resnetv2
 
-
 from bag_of_local_features_models.bagnets.pytorchnet import bagnet9, bagnet17, bagnet33
 
-
-from datasets.svoc import *
-from torch.utils.data import DataLoader
 
 from timm.models import create_model
 

@@ -103,9 +103,26 @@ class StylizedVoc(data.Dataset):
             choose_new_file_list = self.data_ids[new_shape][str(texture1)]
             cls2 = new_shape
             path2 = random.choice(choose_new_file_list)
+
         example2 = self.get_image(path2)
 
         return factor, example1, example2, cls1, cls2
 
     def __len__(self):
         return len(self.data)
+
+
+
+if __name__ == '__main__':
+    class Config():
+        n_factors = 5
+        data_path = "D:\Datasets\STYLIZED_VOC2012"
+        image_size = 513
+
+    dt = StylizedVoc(Config())
+
+    from shutil import copyfile
+    for id, data in dt.data_ids.items():
+        for d, paths in data.items():
+            copyfile(paths[0], Path(r"D:\Datasets\MINI_STYLIZED_VOC2012") / paths[0].name)
+
